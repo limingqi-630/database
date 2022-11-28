@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "utility": "cpp",
+        "sstream": "cpp"
+    },
+    "cmake.configureOnOpen": false
+}
