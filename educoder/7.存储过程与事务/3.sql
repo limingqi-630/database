@@ -1,15 +1,4 @@
 use finance1;
-
--- 在金融应用场景数据库中，编程实现一个转账操作的存储过程sp_transfer_balance，实现从一个帐户向另一个帐户转账。
--- 请补充代码完成该过程：
-/*
-仅当转款人是转出卡的持有人时，才可转出；
-仅当收款人是收款卡的持有人时，才可转入；
-储蓄卡之间可以相互转账；
-允许储蓄卡向信用卡转账，称为信用卡还款(允许替它人还款)，还款可以超过信用卡余额，此时，信用卡余额为负数；
-信用卡不能向储蓄卡转账；
-转账金额不能超过储蓄卡余额；
-*/
 delimiter $$
 create procedure sp_transfer(
 	                 IN applicant_id int,      
@@ -25,21 +14,26 @@ BEGIN
     declare dest_card_type char(20);
     declare source_card_amount decimal(10,2);
 
-    
-    start transaction;          --开启事务
-    set autocommit=off;         --关闭自动事务模式
+    start transaction;  					/*开启事务*/
+    set autocommit=off;         			/*关闭自动事务模式*/
     set real_applicant_id=(select b_c_id from bank_card where b_number=source_card_id);
     set real_receiver_id=(select b_c_id from bank_card where b_number=dest_card_id);
     set source_card_type=(select b_type from bank_card where b_number=source_card_id);
     set dest_card_type=(select b_type from bank_card where b_number=dest_card_id);
     set source_card_amount=(select b_balance from bank_card where b_number=source_card_id);
-    
+    if real_applicant_id=applicant_id and real_receiver_id=receiver_id and !(source_card_type="信用卡") and source_card_amount>=amount then
+        if dest_card_type="储蓄卡" then     /*储蓄卡转储蓄卡*/
+            update bank_card set b_balance=b_balance-amount where b_number=source_card_id;
+            update bank_card set b_balance=b_balance+amount where b_number=dest_card_id;
+        else                                /*储蓄卡转信用卡*/
+            update bank_card set b_balance=b_balance-amount where b_number=source_card_id;
+            update bank_card set b_balance=b_balance-amount where b_number=dest_card_id;
+        end if;
+        set return_code=1;
+    else set return_code=0;
+    end if;
 
-    if real_applicant_id=applicant_id and real_receiver_id=receiver_id and !(source_card_type="信用卡") and source_card_amount>=amount
-
-
-
-    commit;                     --提交
+    commit;                                  /*提交*/
 END$$
 delimiter ;
 
